@@ -75,6 +75,11 @@ from aiohttp import web
 
 routes = web.RouteTableDef()
 
+def bytest_to_string_view_decorator(handler):
+    async def inner(request):
+        result = await handler(request)
+        return result.decode("utf-8")
+    return inner
 
 def python_json_response_view_decorator(handler):
     async def inner(request):
@@ -121,6 +126,7 @@ async def set_redis(request):
 
 @routes.get('/redis/')
 @python_json_response_view_decorator
+@bytest_to_string_view_decorator
 async def get_redis(request):
     key = request.query.get('key')
     result = await request.app[REDIS_CONNECTION].execute('get', key)
