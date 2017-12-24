@@ -2,7 +2,6 @@
 
 import aiohttp
 import asyncio
-import json
 import aiohttp_cors
 from aiohttp import web
 
@@ -12,6 +11,9 @@ import aioredis
 
 # https://magic.io/blog/uvloop-blazing-fast-python-networking/
 import uvloop
+
+from view_decorators import psql_python_view_decorator, python_to_json_response_view_decorator, \
+    bytes_to_string_view_decorator, json_string_to_python_view_decorator
 
 asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
@@ -89,35 +91,6 @@ async def close_session(app):
 
 routes = web.RouteTableDef()
 
-def string_to_python_view_decorator(handler):
-    async def inner(request):
-        result = await handler(request)
-        return json.loads(result)
-    return inner
-
-def bytes_to_string_view_decorator(handler):
-    async def inner(request):
-        result = await handler(request)
-        return result.decode("utf-8")
-
-    return inner
-
-
-def python_json_response_view_decorator(handler):
-    async def inner(request):
-        result = await handler(request)
-        return web.json_response(result, dumps=lambda x: json.dumps(x, default=str))
-
-    return inner
-
-
-def psql_python_view_decorator(handler):
-    async def inner(request):
-        result = await handler(request)
-        return [dict(i) for i in result]
-
-    return inner
-
 
 async def execute_sql(request, sql_string, *params):
     async with request.app[PG_POOL].acquire() as connection:
@@ -126,7 +99,7 @@ async def execute_sql(request, sql_string, *params):
 
 
 # server code
-@python_json_response_view_decorator
+@python_to_json_response_view_decorator
 @psql_python_view_decorator
 async def handle(request):
     # name = request.match_info.get('name', "Anonymous")
@@ -139,7 +112,7 @@ async def handle(request):
 
 
 @routes.post('/redis/')
-@python_json_response_view_decorator
+@python_to_json_response_view_decorator
 async def set_redis(request):
     post_params = await request.post()
     await request.app[REDIS_CONNECTION].execute('set', post_params.get('key'), post_params.get('value'))
@@ -147,7 +120,7 @@ async def set_redis(request):
 
 
 @routes.get('/redis/')
-@python_json_response_view_decorator
+@python_to_json_response_view_decorator
 @bytes_to_string_view_decorator
 async def get_redis(request):
     key = request.query.get('key')
@@ -156,8 +129,8 @@ async def get_redis(request):
 
 
 @routes.get('/request/')
-@python_json_response_view_decorator
-@string_to_python_view_decorator
+@python_to_json_response_view_decorator
+@json_string_to_python_view_decorator
 async def request_test(request):
     root = 'https://jsonplaceholder.typicode.com/posts/1'
     result = await fetch(app[SESSION], root)
