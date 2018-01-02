@@ -13,14 +13,14 @@ import aioredis
 import uvloop
 
 from view_decorators import psql_python_view_decorator, python_to_json_response_view_decorator, \
-    bytes_to_string_view_decorator, json_string_to_python_view_decorator
+    bytes_to_string_view_decorator, json_string_to_python_view_decorator, handle_none_view_decorator
 
 asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
 
 # client code
 
-async def fetch(session, url):
+async def fetch(session: aiohttp.ClientSession, url: str) -> str:
     # with async_timeout.timeout(10):
     async with session.get(url) as response:
         return await response.text()
@@ -48,13 +48,13 @@ SESSION = 'session'
 
 
 # server startup
-async def startup(app):
+async def startup(app: web.Application) -> None:
     await connect_pg(app)
     await connect_redis(app)
     create_session(app)
 
 
-def create_session(app):
+def create_session(app) -> aiohttp.ClientSession:
     app[SESSION] = aiohttp.ClientSession(loop=app.loop)
     return app[SESSION]
 
@@ -101,6 +101,7 @@ async def execute_sql(request, sql_string, *params):
 # server code
 @python_to_json_response_view_decorator
 @psql_python_view_decorator
+@handle_none_view_decorator(list)
 async def handle(request):
     # name = request.match_info.get('name', "Anonymous")
     # text = "Hello, " + name
@@ -122,6 +123,7 @@ async def set_redis(request):
 @routes.get('/redis/')
 @python_to_json_response_view_decorator
 @bytes_to_string_view_decorator
+@handle_none_view_decorator(bytes)
 async def get_redis(request):
     key = request.query.get('key')
     result = await request.app[REDIS_CONNECTION].execute('get', key)
@@ -131,6 +133,7 @@ async def get_redis(request):
 @routes.get('/request/')
 @python_to_json_response_view_decorator
 @json_string_to_python_view_decorator
+@handle_none_view_decorator(str)
 async def request_test(request):
     root = 'https://jsonplaceholder.typicode.com/posts/1'
     result = await fetch(app[SESSION], root)

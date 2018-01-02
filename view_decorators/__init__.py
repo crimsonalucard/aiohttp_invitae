@@ -33,3 +33,16 @@ def json_string_to_python_view_decorator(handler):
         return json.loads(result)
 
     return inner
+
+
+def handle_none_view_decorator(identity_type):
+    def _handle_none_view_decorator(handler):
+        async def inner(request):
+            result = await handler(request)
+            if result is None:
+                return identity_type()
+            else:
+                return result
+        return inner
+    return _handle_none_view_decorator
+
