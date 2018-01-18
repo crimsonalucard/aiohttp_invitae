@@ -2,3 +2,6 @@ venv
 .idea
 static/
 templates/
+.DS_Store
+.mypy_cache/
+view_decorators/__pycache__/
