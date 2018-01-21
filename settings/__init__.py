@@ -1,0 +1,5 @@
+PG_CONNECTION_STRING: str = 'postgresql://postgres@localhost/postgres'
+PG_POOL: str = 'pg_pool'
+REDIS_CONNECTION_STRING: str = 'redis://localhost'
+REDIS_CONNECTION: str = 'redis_connection'
+SESSION: str = 'session'
