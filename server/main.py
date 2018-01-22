@@ -8,7 +8,6 @@ from server.bootstrap import startup, cleanup
 from server.cors import add_cors_to_all_routes
 from server.views import decorated_routes
 from server.routes import routes
-
 # https://magic.io/blog/uvloop-blazing-fast-python-networking/
 import uvloop
 

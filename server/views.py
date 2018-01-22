@@ -4,51 +4,32 @@ from aiohttp import web
 from aiohttp.web_request import Request
 from asyncpg.protocol.protocol import Record
 
-from client import fetch
-from settings import REDIS_CONNECTION, SESSION
 from utils import generic_conversion_view_decorator_factory, python_to_json_response, psql_to_python, \
-    handle_none_view_decorator, execute_sql, bytes_to_string, json_string_to_python
+    handle_none_view_decorator, execute_sql
+from server.cache import cache_json
 
 decorated_routes = web.RouteTableDef()
 
+@cache_json
 @generic_conversion_view_decorator_factory(python_to_json_response)
 @generic_conversion_view_decorator_factory(psql_to_python)
 @handle_none_view_decorator(list)
-async def handle(request: Request) -> Record:
-    # name = request.match_info.get('name', "Anonymous")
-    # text = "Hello, " + name
-    # return web.Response(text=text)
-    name = request.query.get('name', '*')
-    result: Record = await execute_sql(request, 'SELECT * FROM users WHERE name = $1;', name)
-    # return web.json_response(result, dumps=date_enabled_json_dumps)
+async def search_for_gene(request: Request) -> Record:
+    gene: str = request.query.get('gene', '').upper()
+    limit: int = int(request.query.get('limit', '10'))
+    offset: int = int(request.query.get('offset', '0'))
+    sql_string: str = "SELECT * FROM variants WHERE gene = $1 LIMIT $2 OFFSET $3;"
+    result: Record = await execute_sql(request, sql_string, gene, limit, offset)
     return result
 
-
-@decorated_routes.post('/redis/')
+@cache_json
 @generic_conversion_view_decorator_factory(python_to_json_response)
-async def set_redis(request: Request) -> Any:
-    post_params = await request.post()
-    await request.app[REDIS_CONNECTION].execute('set', post_params.get('key'), post_params.get('value'))
-    return {'message': 'successfully inserted key into redis'}
-
-
-@decorated_routes.get('/redis/')
-@generic_conversion_view_decorator_factory(python_to_json_response)
-@generic_conversion_view_decorator_factory(bytes_to_string)
-@handle_none_view_decorator(bytes)
-async def get_redis(request: Request) -> bytes:
-    key = request.query.get('key')
-    result: bytes = await request.app[REDIS_CONNECTION].execute('get', key)
+@generic_conversion_view_decorator_factory(psql_to_python)
+@handle_none_view_decorator(list)
+async def word_suggestion(request: Request) -> Record:
+    word: str = request.query.get('word', '').upper()
+    limit: int = int(request.query.get('limit', '10'))
+    offset: int = int(request.query.get('offset', '0'))
+    sql_string: str = "SELECT gene AS suggestion FROM variants WHERE gene LIKE $1||'%' LIMIT $2 OFFSET $3;"
+    result: Record = await execute_sql(request, sql_string, word, limit, offset)
     return result
-
-
-@decorated_routes.get('/request/')
-@generic_conversion_view_decorator_factory(python_to_json_response)
-@generic_conversion_view_decorator_factory(json_string_to_python)
-@handle_none_view_decorator(str)
-async def request_test(_: Request) -> str:
-    root = 'https://jsonplaceholder.typicode.com/posts/1'
-    result: str = await fetch(app[SESSION], root)
-    return result
-
-

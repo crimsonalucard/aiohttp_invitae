@@ -1,5 +1,5 @@
 import json
-from typing import List, Dict, Any, Callable
+from typing import List, Dict, Any, Callable, Union
 
 from aiohttp import web
 from aiohttp.web_request import Request
@@ -52,10 +52,11 @@ def handle_none_view_decorator(identity_type: Callable[..., Any]) -> Callable[
     return _handle_none_view_decorator
 
 
-async def execute_sql(request: Request, sql_string: str, *params: str) -> Record:
+async def execute_sql(request: Request, sql_string: str, *params: Union[str, int]) -> Record:
     async with request.app[PG_POOL].acquire() as connection:
         result: Record = await connection.fetch(sql_string, *params)
     return result
+
 
 def concat_sequence(*args):
     for seq in args:

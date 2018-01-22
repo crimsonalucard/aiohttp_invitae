@@ -1,9 +1,8 @@
 from aiohttp import web
 from typing import List
-from server.views import handle
+from server.views import search_for_gene, word_suggestion
 
 routes: List[web.RouteDef] = [
-    web.get('/', handle),
-    web.get('/{name}', handle),
-    web.get('/postgres/', handle)
+    web.get('/gene_search/', search_for_gene),
+    web.get('/word_suggestion/', word_suggestion)
 ]
