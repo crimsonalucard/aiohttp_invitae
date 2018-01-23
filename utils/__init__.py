@@ -61,3 +61,10 @@ async def execute_sql(request: Request, sql_string: str, *params: Union[str, int
 def concat_sequence(*args):
     for seq in args:
         yield from seq
+
+def paginate_sql_query(query: str, limit: int, offset: int):
+    if limit:
+        query += " LIMIT $2"
+    if offset:
+        query += " OFFSET $3"
+    return query
