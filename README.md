@@ -47,6 +47,9 @@ variants using the schema.sql file, under postgres.public.
 
 then load the data into the data base using postgres_public_variants.sql
 
+there is a sqlite database included in the repo. Using it will not be trivial
+as the underlying implementation/database library of this project assumes postgresql. 
+
 run the server using ./main.py
 
 make sure you have the latest version of python
@@ -54,7 +57,10 @@ make sure you have the latest version of python
 you can type check on python using mypy
 run: mypy main.py 
 
-You will also need redis installed on your local computer.
+You will also need redis installed on your local computer. Redis is used
+to cache everything. I left it with an expiration time of one minute.
+This can be changed in settings. Caching can be removed with minor changes
+to the code. 
 
 Front end can be run by running: npm start run
 
